@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "nodecook-express",
+  "private_key_id": "f8849a6f0fc4df75e5f6caf6e3ee6249bce50fcb",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCcC4sbrqJH1Ksk\nWL2ZE8NLJNno5/BhL4lXMQTdUkMzv0cuDfUUxiCuGfMqSWY1/hZjiW2VqY77e/y3\naofm0sJM4N46TCy/nkszkAB5bTGEBEMaxIq/7/NiPSq519CXDhSFwfYE6iHCVkI9\nSwZT71m2TAchgijzgX39dBaXfidn02gP0eMbNnsU5FDHGISEthvCF1HOanevjtS6\ncZao8nYY3iEYcQd3o1IHC2rh2NMZ43AZF2ZtKqhgbFcSyGLhYtRisrOZVrzsOp/i\nPGSAy41W3AQmkycfGv8I34+782wirp/s2pHZieQ2DxXrSlEwenFH1n3m8Ihzyynm\nGkwxnIaLAgMBAAECggEAGWhrwxshQ07meumUHYuxPdgHPzwc0MY7t528rAjL9m4L\nufz9zd8gzRhelqES6nGv1Y8376mHJX2fvYG0FSp2BqyKorVqh9zPY9rrqNnVuSg0\ngPRFn1EDsRhCj7YLOb1KLClT1KMG0izXZkGEC0Cqu9sPQi5+Wn/YMt+nGg2pfucV\nJG2sLtBQpE3G00vQ8zIfjIhPrOAY03tRgWGQNO0ZAucc9z6WICpg4iGM+sq6Zg6t\ns04EF99JHZQxqY0OTgL3kxcS5ckmyxlunCaDHfEUk2tyOVNU8tYbg1Eth7LA+rPR\nUzCsn4BsffvM+yCrbYl4MXbGj6KWO/XKBJbHhWlHKQKBgQDP0Ak/CuBLupiL7XSk\nCGaAvN3f4E7m/0lYBmYXNG4qFp0XyLXHuKokvw8LtzsoBsQskrDVnMpVYbeDCz7v\nuGE8OkJZUOhvXNrNHdFPz0f3rqXaVJ6O3vVkRSDEN9cgxYcx143dRaW+xhOUY8/D\ntr0RQogLWgyez/YmrwGI69Q7nwKBgQDAOojJw8u57fhNwsMVEmqNf4eyPlYoE8Fr\nzCEln7dHFz4WtqLp/J2/tJpw3PFFDJ5xIYEjKD5UjryF+KVOVWG1kZKWSTKHg7Wq\n24SZnM5A+8Tj0nInNFejzHwzowDPLewNsK884teNL31Xkm05h1g9F68IGIKQNxVt\nSoJ8NXlNlQKBgQCyMjzLf0MIDPBkBHEhe0aSG+HR6GEgOUYmIg6G1WGl25BHZcdi\nhFn5eo+nRy6Fyw+K/Rp/gZwKjOk0iH8mRh+y6m4ccoFthNzmSCxE2IRowazcQ/VW\no58epRxMxWlGY7rjJWgzllZi+Syu8MumklsbosZPnZ72y3LShvy08SwjFwKBgQCC\n1pSKODFvURED5H+h1RIfU2FKKfG8f43UUHFzSV2XDrPdA9ypRJ8ef8/q6Ad0Rx2E\nxRg/lMGwDiM1UMM7KRRDYF0U26d/418Adz+uyrL8OiGOK4w1MQRB4gnbn6QKYChe\nPRdZatDqMRuwQmMDmCKwGnGxIfWkMUntRJzB7CevbQKBgQCuPW8oieNKrRLSp1wD\nVn2KLYYyS29p4CrS1nvLOMyLVRo08jCIM5Xv16UZ+DFftWgp7FjXr/RLtZ8tCrfU\nADdOFcdWCA09XfhqthxKlpf9oSgQa4Hi9BkQzcXXhUwolU24YvKwE/8qzBL7b/BW\nZYscn8TvwuWVy11HtUqYed3AOQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-k3ywt@nodecook-express.iam.gserviceaccount.com",
+  "client_id": "101066529908286249635",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-k3ywt%40nodecook-express.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
