@@ -11,7 +11,7 @@ router.get("/", (req, res) => {
   });
 });
 
-router.put("/", (req, res) => {
+router.patch("/", (req, res) => {
   const userId = req.uid;
   const newSettings = req.body;
   settings.put(userId, newSettings).then((data) => {
