@@ -69,29 +69,22 @@ const getProjectById = async (uid, projectId) => {
 const newCollection = async (projectId, collection) => {
   const id = uuidv4();
   const currentDate = new Date().toISOString();
-  await db
-    .collection("projects")
-    .doc(projectId)
-    .update({
-      collections: admin.firestore.FieldValue.arrayUnion({
-        id,
-        name: collection.name,
-        description: collection.description,
-        created: currentDate,
-        updated: currentDate,
-        endpoints: [],
-      }),
-    });
-  updateModified(projectId);
-
-  return {
+  const newCollection = {
     id,
-    name: collection.name,
-    description: collection.description,
+    ...collection,
     created: currentDate,
     updated: currentDate,
     endpoints: [],
   };
+  await db
+    .collection("projects")
+    .doc(projectId)
+    .update({
+      collections: admin.firestore.FieldValue.arrayUnion(newCollection),
+    });
+  updateModified(projectId);
+
+  return newCollection
 };
 
 const removeCollection = async (projectId, collectionId) => {
@@ -110,6 +103,22 @@ const removeCollection = async (projectId, collectionId) => {
   }
   updateModified(projectId);
 };
+
+const updateCollection = async (projectId, collectionId, collection) => {
+  const projectDoc = await db.collection("projects").doc(projectId).get();
+  const collections = projectDoc.data().collections;
+  const index = collections.findIndex((c) => c.id === collectionId);
+  console.log('patching', projectId, collectionId, collection)
+  collections[index] = {
+    ...collections[index],
+    ...collection,
+    updated: new Date().toISOString(),
+  };
+  await db.collection("projects").doc(projectId).update({
+    collections: collections,
+  });
+  updateModified(projectId);
+}
 
 const newEndpoint = async (projectId, collectionId, endpoint) => {
   const id = uuidv4();
@@ -214,5 +223,6 @@ module.exports = {
   addRepository,
   removeRepository,
   removeCollection,
-  removeEndpoint
+  removeEndpoint,
+  updateCollection,
 };

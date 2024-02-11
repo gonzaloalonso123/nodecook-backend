@@ -110,4 +110,15 @@ router.delete("/:id/repository", (req, res) => {
   });
 });
 
+router.patch("/:id/collections/:collectionId", (req, res) => {
+  const projectId = req.params.id;
+  const collectionId = req.params.collectionId;
+  const collection = req.body;
+  projects.updateCollection(projectId, collectionId, collection).then((data) => {
+    res.status(200).send({
+      collection: data,
+    });
+  });
+});
+
 module.exports = router;

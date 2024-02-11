@@ -6,7 +6,7 @@ const codeWriter = require("../models/code_writer");
 
 router.post("/write-backend", async (req, res) => {
   const userId = req.uid;
-  const { projectId } = req.body;
+  const { projectId, options } = req.body;
   const project = await projects.getProjectById(userId, projectId);
   const user = await getUserByUid(userId);
   const userName = user.settings.github.username;
@@ -16,7 +16,8 @@ router.post("/write-backend", async (req, res) => {
       userName,
       project.github.repository_name,
       token,
-      project.collections
+      project.collections,
+      options
     )
     .then(() => {
       res.status(200).send("ok");

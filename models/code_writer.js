@@ -19,17 +19,35 @@ const defaultPackageJson = (repository_name, username) => ({
     express: "^4.18.2",
     nodemon: "^3.0.3",
     uuid: "^9.0.1",
+    mongoose: "^8.1.1",
   },
 });
 
-const writeBackend = async (userName, repositoryName, token, collections) => {
+const writeBackend = async (
+  userName,
+  repositoryName,
+  token,
+  collections,
+  options
+) => {
   await github.cloneRepository(userName, repositoryName, token);
   const repoDirectory = path.join(__dirname, "..", "repos", repositoryName);
-  await writeExpressBasicServer(repoDirectory, collections);
-  await initNodeAndAddDependencies(repoDirectory, repositoryName, userName);
+  if (options.wipe) {
+    await wipeRepositoryData(repoDirectory, userName, repositoryName, token);
+  }
   await createFolderEstructure(repoDirectory);
-  await writeRoutes(repoDirectory, collections);
-  await writeModels(repoDirectory, collections);
+  const appDirectory = path.join(repoDirectory, "app");
+  await writeExpressBasicServer(appDirectory, collections, options);
+  await initNodeAndAddDependencies(repoDirectory, repositoryName, userName);
+  await writeCustomFile(appDirectory);
+  await writeRoutes(appDirectory, collections);
+  await writeDatabaseConnection(
+    path.join(appDirectory, "database"),
+    collections,
+    repositoryName
+  );
+  await writeDockerCompose(repoDirectory, repositoryName, options);
+  await writeDockerFile(repoDirectory, options);
   await github.pushRepository(userName, repositoryName, token);
 };
 
@@ -37,13 +55,22 @@ const writeFile = async (filePath, fileContent) => {
   await fsPromises.writeFile(filePath, fileContent);
 };
 
-const writeExpressBasicServer = async (repoDirectory, collections) => {
-  let fileContent = `const express = require("express");\nconst app = express();\n
-${collections.map((c) => {
-  return `const ${wordToPascalCase(
-    c.name
-  )} = require("./routes/${c.name.toLowerCase()}");\n`;
-})}
+const writeExpressBasicServer = async (repoDirectory, collections, options) => {
+  let fileContent = `const express = require("express");
+const app = express();
+const cors = require("cors");
+const db = require("./database/config/db.js");
+const custom = require("./custom");
+${collections
+  .map(
+    (c) =>
+      `const ${wordToPascalCase(
+        c.name
+      )} = require("./routes/${c.name.toLowerCase()}");`
+  )
+  .join("\n")}
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
@@ -57,14 +84,30 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use("/custom", custom);
+
+app.get("/test", (req, res) => {
+  res.send("Hello World!");
+});
 
 ${collections.map((c) => {
-  return `app.use("/${c.name.toLowerCase()}", ${wordToPascalCase(c.name)});\n`;
+  return `\napp.use("/${c.name.toLowerCase()}", ${wordToPascalCase(c.name)});`;
 })}
 
-app.listen(3000, () => {\n  console.log("Server is running on port 3000");\n});\n`;
+app.listen(${options.port}, () => {\n  console.log("Server is running on port ${
+    options.port
+  }");\n});\n`;
   const fileName = "index.js";
   const filePath = path.join(repoDirectory, fileName);
+  await writeFile(filePath, fileContent);
+};
+
+const writeCustomFile = async (repoDirectory) => {
+  const fileContent =
+    'const express = require("express");\nconst router = express.Router();\n\n\n\n\n\n\nmodule.exports = router;';
+  const fileName = "custom.js";
+  const filePath = path.join(repoDirectory, fileName);
+  if (fs.existsSync(filePath)) return;
   await writeFile(filePath, fileContent);
 };
 
@@ -84,9 +127,15 @@ const createFolder = async (folderPath) => {
 };
 
 const createFolderEstructure = async (repoDirectory) => {
-  const folders = ["routes", "models", "middleware"];
+  await createFolder(path.join(repoDirectory, "app"));
+  const folders = ["routes", "models", "middleware", "database"];
   for (const folder of folders) {
-    const folderPath = path.join(repoDirectory, folder);
+    const folderPath = path.join(repoDirectory, "app", folder);
+    await createFolder(folderPath);
+  }
+  const databaseFolders = ["config", "models", "daos"];
+  for (const folder of databaseFolders) {
+    const folderPath = path.join(repoDirectory, "app", "database", folder);
     await createFolder(folderPath);
   }
 };
@@ -97,7 +146,7 @@ const writeRoutes = async (repoDirectory, collections) => {
       'const express = require("express");\nconst router = express.Router();\n';
     fileContent += `const ${
       collection.name
-    } = require("../models/${collection.name.toLowerCase()}");\n\n`;
+    } = require("../database/daos/${collection.name.toLowerCase()}");\n\n`;
     for (const endpoint of collection.endpoints) {
       fileContent += createEndpoint(endpoint);
     }
@@ -111,9 +160,8 @@ const writeRoutes = async (repoDirectory, collections) => {
 const createEndpoint = (endpoint) => {
   let fileContent = `\nrouter.${endpoint.method.toLowerCase()}("${
     endpoint.url
-  }", (req, res) => {`;
+  }", async (req, res) => {`;
   fileContent += createEndpointBody(endpoint);
-  console.log(createEndpointBody(endpoint));
   fileContent += "\n});\n";
   return fileContent;
 };
@@ -127,8 +175,8 @@ const createEndpointBody = (endpoint) => {
     case "POST":
       body += createPostBody(endpoint);
       break;
-    case "PUT":
-      body += createPutBody(endpoint);
+    case "PATCH":
+      body += createPatchBody(endpoint);
       break;
     case "DELETE":
       body += createDeleteBody(endpoint);
@@ -168,30 +216,180 @@ const createPostBody = (endpoint) => {
   return body;
 };
 
-const createPutBody = (endpoint) => {
-  let body = `const item = await ${endpoint.collection}.update(req.params.id,req.body);`;
+const createPatchBody = (endpoint) => {
+  let body = `const item = await ${endpoint.collection}.update(req.params.id, req.body);`;
   return body;
 };
 
 const createDeleteBody = (endpoint) => {
-  let body = `const item = await ${endpoint.collection}.delete(req.params.id);`;
+  let body = `const item = await ${endpoint.collection}.del(req.params.id);`;
   return body;
-};
-
-const writeModels = async (repoDirectory, collections) => {
-  for (const collection of collections) {
-    const collectionName = wordToPascalCase(collection.name);
-    let fileContent = `const db = require("../db");\n`;
-    fileContent += `const ${collectionName} = db.collection("${collectionName}");\n`;
-    fileContent += `module.exports = ${collectionName};`;
-    const fileName = `${collection.name.toLowerCase()}.js`;
-    const filePath = path.join(repoDirectory, "models", fileName);
-    await writeFile(filePath, fileContent);
-  }
 };
 
 const wordToPascalCase = (word) => {
   return word.charAt(0).toUpperCase() + word.slice(1);
+};
+
+const writeDatabaseConnection = async (
+  repoDirectory,
+  collections,
+  repositoryName
+) => {
+  await writeDatabaseSetup(repoDirectory, repositoryName);
+  await writeDatabaseModels(repoDirectory, collections);
+  await writeDatabaseDaos(repoDirectory, collections);
+};
+
+const writeDatabaseSetup = async (repoDirectory, repositoryName) => {
+  const fileContent = `const mongoose = require("mongoose");\n
+mongoose.connect("mongodb://mongodb:27017/${repositoryName}", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", function () {
+  console.log("Connected to database");
+});\n
+module.exports = db;`;
+
+  const fileName = "db.js";
+  const filePath = path.join(repoDirectory, "config", fileName);
+  await writeFile(filePath, fileContent);
+};
+
+const writeDatabaseModels = async (repoDirectory, collections) => {
+  for (const collection of collections) {
+    if (collection.fields.length > 0) {
+      await writeTypedModel(repoDirectory, collection);
+    } else {
+      await writeUntypedModel(repoDirectory, collection);
+    }
+  }
+};
+
+const writeTypedModel = async (repoDirectory, collection) => {
+  const collectionName = wordToPascalCase(collection.name);
+  let fileContent = `const mongoose = require("mongoose");\n
+const ${collectionName}Schema = new mongoose.Schema(
+  ${createSchema(collection)}
+);\n
+const ${collectionName} = mongoose.model("${collectionName}", ${collectionName}Schema);\n
+module.exports = ${collectionName};`;
+
+  const fileName = `${collection.name.toLowerCase()}.js`;
+  const filePath = path.join(repoDirectory, "models", fileName);
+  await writeFile(filePath, fileContent);
+};
+
+const writeUntypedModel = async (repoDirectory, collection) => {
+  const collectionName = wordToPascalCase(collection.name);
+  let fileContent = `const mongoose = require("mongoose");\n
+const ${collectionName}Schema = new mongoose.Schema({ any: {} });\n
+const ${collectionName} = mongoose.model("${collectionName}", ${collectionName}Schema);\n
+module.exports = ${collectionName};`;
+
+  const fileName = `${collection.name.toLowerCase()}.js`;
+  const filePath = path.join(repoDirectory, "models", fileName);
+  await writeFile(filePath, fileContent);
+};
+
+const createSchema = (collection) => {
+  console.log(collection.fields);
+  let schema = "{";
+  for (const field of collection.fields) {
+    schema += `${field.name}: "${field.type}",`;
+  }
+  schema += "}";
+  return indent(schema);
+};
+
+const writeDatabaseDaos = async (repoDirectory, collections) => {
+  for (const collection of collections) {
+    const collectionName = wordToPascalCase(collection.name);
+    let fileContent = `const ${collectionName} = require("../models/${collection.name.toLowerCase()}");\n
+const getAll = async () => {
+  return await ${collectionName}.find();
+};\n
+const getById = async (id) => {
+  return await ${collectionName}.findById(id);
+};\n
+const create = async (data) => {
+  return await ${collectionName}.create(data);
+};\n
+const update = async (id, data) => {
+  return await ${collectionName}.findByIdAndUpdate(id, data, {new: true});
+};\n
+const del = async (id) => {
+  return await ${collectionName}.findByIdAndDelete(id);
+};\n
+const getByCustom = async (custom, params) => {
+  return await ${collectionName}.find(custom);
+};\n
+
+module.exports = {
+  getAll,
+  getById,
+  create,
+  update,
+  del,
+  getByCustom,
+};`;
+
+    const fileName = `${collection.name.toLowerCase()}.js`;
+    const filePath = path.join(repoDirectory, "daos", fileName);
+    await writeFile(filePath, fileContent);
+  }
+};
+
+const writeDockerCompose = async (repoDirectory, repositoryName, options) => {
+  const fileContent = `version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "${options.port + ":" + options.port}"
+    depends_on:
+      - mongodb
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/${repositoryName}
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+`;
+  const fileName = "docker-compose.yml";
+  const filePath = path.join(repoDirectory, fileName);
+  await writeFile(filePath, fileContent);
+};
+
+const writeDockerFile = async (repoDirectory, options) => {
+  const fileContent = `
+FROM node:latest
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY /app .
+EXPOSE ${options.port}
+CMD ["node", "index.js"]
+  `;
+  const fileName = "Dockerfile";
+  const filePath = path.join(repoDirectory, fileName);
+  await writeFile(filePath, fileContent);
+};
+
+const wipeRepositoryData = async (
+  repoDirectory,
+  userName,
+  repositoryName,
+  token
+) => {
+  fsPromises.rm(path.join(repoDirectory, "app"), { recursive: true });
+  fsPromises.rm(path.join(repoDirectory, "Dockerfile"));
+  fsPromises.rm(path.join(repoDirectory, "docker-compose.yml"));
+  fsPromises.rm(path.join(repoDirectory, "package.json"));
+  await github.pushRepository(userName, repositoryName, token);
 };
 
 module.exports = {
