@@ -167,24 +167,29 @@ const createEndpoint = (endpoint) => {
 };
 
 const createEndpointBody = (endpoint) => {
-  let body = "\n";
+  let body = "\ntry {\n";
   switch (endpoint.method) {
     case "GET":
-      body += createGetBody(endpoint);
+      body += indent(createGetBody(endpoint));
       break;
     case "POST":
-      body += createPostBody(endpoint);
+      body += indent(createPostBody(endpoint));
       break;
     case "PATCH":
-      body += createPatchBody(endpoint);
+      body += indent(createPatchBody(endpoint));
       break;
     case "DELETE":
-      body += createDeleteBody(endpoint);
+      body += indent(createDeleteBody(endpoint));
       break;
   }
 
   body += "\n";
-  body += "res.status(200).json(item);";
+  body += indent("res.status(200).json(item);");
+  body += "\n}";
+  body += "\ncatch (error) {\n";
+  body += indent("res.status(500).json({ error: error.message });");
+  body += "\n}";
+
   return indent(body);
 };
 
@@ -308,6 +313,7 @@ const writeDatabaseDaos = async (repoDirectory, collections) => {
   for (const collection of collections) {
     const collectionName = wordToPascalCase(collection.name);
     let fileContent = `const ${collectionName} = require("../models/${collection.name.toLowerCase()}");\n
+
 const getAll = async () => {
   return await ${collectionName}.find();
 };\n
