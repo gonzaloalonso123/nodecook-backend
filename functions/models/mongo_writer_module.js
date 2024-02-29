@@ -139,7 +139,7 @@ services:
         depends_on:
         - mongodb
         environment:
-        MONGO_URI: mongodb://mongodb:27017/${repositoryName}
+            MONGO_URI: mongodb://mongodb:27017/${repositoryName}
 
     mongodb:
         image: mongo:latest
