@@ -20,6 +20,7 @@ const createProject = async (uid, project) => {
       endpoints_count: 0,
       collections_count: 0,
       node_version: "18.18.0",
+      prefered_database: "mongodb",
       github: {
         enabled: false,
       },

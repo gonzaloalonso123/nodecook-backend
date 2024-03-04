@@ -67,7 +67,7 @@ const writeBackend = async (
   }
   console.log(options);
   await createFolderEstructure(repoDirectory, options.database);
-  const appDirectory = path.join(repoDirectory, "app");
+  const appDirectory = options.database === 'mongodb' ? path.join(repoDirectory, "app") : path.join(repoDirectory, "functions");
   await writeExpressBasicServer(appDirectory, collections, options);
   await initNodeAndAddDependencies(
     repoDirectory,

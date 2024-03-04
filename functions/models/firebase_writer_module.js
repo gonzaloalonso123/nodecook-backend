@@ -7,7 +7,6 @@ const writeFirebaseDatabaseConnection = async (
   user
 ) => {
   await writeIndex(repoDirectory);
-  // await writeFirebaseDatabaseConfig(repoDirectory);
   await writeFirebaseDatabaseDaos(repoDirectory, collections);
   await writeUserModel(repoDirectory, user);
   await writeFirebaseMiddleware(repoDirectory);
@@ -58,10 +57,8 @@ const writeIndex = async (repoDirectory) => {
   const indexFileContent = `const { getFirestore } = require("firebase-admin/firestore");
 const admin = require("firebase-admin");
 
-const serviceAccount = require("../service_account/service_account.json");
-
 admin.initializeApp({
-  credential: admin.credential.cert({...serviceAccount, private_key_id : process.env.FIREBASE_PRIVATE_KEY}),
+  credential: admin.credential.applicationDefault(),
 });
 const db = getFirestore();
 
@@ -69,12 +66,6 @@ module.exports = { db };
   `;
   const indexFilePath = path.join(repoDirectory, "config", "index.js");
   await writeFile(indexFilePath, indexFileContent);
-};
-
-const writeFirebaseDatabaseConfig = async (repoDirectory, config) => {
-  const fileContent = config;
-  const filePath = path.join(repoDirectory, "service_account.js");
-  await writeFile(filePath, fileContent);
 };
 
 const writeFirebaseDatabaseDaos = async (repoDirectory, collections) => {
@@ -167,6 +158,5 @@ module.exports = {
 
 module.exports = {
   writeFirebaseDatabaseConnection,
-  writeFirebaseDatabaseConfig,
   writeFirebaseDatabaseDaos,
 };
